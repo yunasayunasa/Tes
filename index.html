@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>タイムライン構築ミステリ：消えた青いクッキー</title>
-    <!-- ★★★ 専門ライブラリ「SortableJS」を読み込みます ★★★ -->
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
     <style>
         :root {
@@ -15,7 +14,6 @@
             --text-color: #333;
             --title-color: #1a73e8;
             --shadow-color: rgba(0, 0, 0, 0.1);
-            --drop-hover-bg: #d9eaff;
         }
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Hiragino Kaku Gothic ProN', Meiryo, sans-serif;
@@ -23,7 +21,6 @@
             color: var(--text-color);
             margin: 0;
             padding: 10px;
-            /* 画面全体のスクロールを無効化して誤操作を防ぐ */
             overscroll-behavior: none;
         }
         .game-container {
@@ -36,111 +33,46 @@
             padding: 16px;
         }
         h1 {
-            color: var(--title-color);
-            text-align: center;
-            border-bottom: 2px solid var(--title-color);
-            padding-bottom: 10px;
-            font-size: 1.5em;
+            color: var(--title-color); text-align: center; border-bottom: 2px solid var(--title-color);
+            padding-bottom: 10px; font-size: 1.5em;
         }
-        p {
-            line-height: 1.7;
-        }
+        p { line-height: 1.7; }
         .area-title {
-            font-weight: bold;
-            font-size: 1.2em;
-            margin-top: 30px;
-            margin-bottom: 10px;
-            border-left: 5px solid var(--title-color);
-            padding-left: 10px;
+            font-weight: bold; font-size: 1.2em; margin-top: 30px; margin-bottom: 10px;
+            border-left: 5px solid var(--title-color); padding-left: 10px;
         }
         .card-pool {
-            background-color: var(--timeline-bg);
-            border-radius: 8px;
-            padding: 15px;
-            min-height: 50px;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
+            background-color: var(--timeline-bg); border-radius: 8px; padding: 15px;
+            min-height: 50px; display: flex; flex-wrap: wrap; gap: 10px;
         }
         .card {
-            background-color: var(--card-bg);
-            border: 1px solid #ccc;
-            border-radius: 8px;
-            padding: 10px;
-            cursor: grab;
-            box-shadow: 0 2px 4px var(--shadow-color);
+            background-color: var(--card-bg); border: 1px solid #ccc; border-radius: 8px;
+            padding: 10px; cursor: grab; box-shadow: 0 2px 4px var(--shadow-color);
         }
-        .person-card {
-            font-weight: bold;
-            text-align: center;
-            flex-grow: 1;
-        }
-        .testimony-card {
-            width: 100%;
-        }
-        .timeline {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
+        .person-card { font-weight: bold; text-align: center; flex-grow: 1; }
+        .testimony-card { width: 100%; font-size: 0.9em; }
+        .timeline { display: flex; flex-direction: column; gap: 15px; }
         .timeline-slot {
-            background-color: var(--container-bg);
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            padding: 15px;
-            display: flex;
-            gap: 15px;
-            align-items: stretch;
+            background-color: var(--container-bg); border: 1px solid #ddd; border-radius: 8px;
+            padding: 15px; display: flex; gap: 15px; align-items: stretch;
         }
         .person-dropzone, .testimony-dropzone {
-            border: 2px dashed #ccc;
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: background-color 0.2s, border-color 0.2s;
+            border: 2px dashed #ccc; border-radius: 8px; display: flex;
+            align-items: center; justify-content: center; transition: background-color 0.2s, border-color 0.2s;
         }
-        .person-dropzone {
-            width: 120px;
-            min-height: 50px;
-            flex-shrink: 0;
-        }
-        .testimony-dropzone {
-            flex-grow: 1;
-            min-height: 80px;
-        }
-        /* ★★★ ライブラリが自動で付けるクラスでスタイルを調整 ★★★ */
-        .sortable-ghost {
-            opacity: 0.4;
-            background: #cce5ff;
-        }
-        .sortable-chosen {
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-            transform: scale(1.05);
-        }
-        .button-container {
-            text-align: center;
-            margin-top: 30px;
-        }
+        .person-dropzone { width: 120px; min-height: 50px; flex-shrink: 0; }
+        .testimony-dropzone { flex-grow: 1; min-height: 80px; }
+        .sortable-ghost { opacity: 0.4; background: #cce5ff; }
+        .sortable-chosen { box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2); transform: scale(1.05); }
+        .button-container { text-align: center; margin-top: 30px; }
         #check-answer-btn {
-            background-color: var(--title-color);
-            color: white;
-            border: none;
-            padding: 12px 30px;
-            font-size: 1.1em;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: background-color 0.3s;
+            background-color: var(--title-color); color: white; border: none; padding: 12px 30px;
+            font-size: 1.1em; border-radius: 8px; cursor: pointer; transition: background-color 0.3s;
         }
-        #check-answer-btn:hover {
-            background-color: #155ab3;
-        }
+        #check-answer-btn:hover { background-color: #155ab3; }
         #result-area {
-            margin-top: 20px;
-            padding: 15px;
-            border-radius: 8px;
-            line-height: 1.8;
-            white-space: pre-wrap;
+            margin-top: 20px; padding: 15px; border-radius: 8px;
+            line-height: 1.8; white-space: pre-wrap;
         }
         .correct { background-color: #d4edda; color: #155724; }
         .incorrect { background-color: #f8d7da; color: #721c24; }
@@ -150,7 +82,6 @@
             .game-container { padding: 10px; }
             .timeline-slot { flex-direction: column; }
             .person-dropzone { width: auto; min-height: 40px; }
-            .testimony-card { font-size: 0.9em; }
         }
     </style>
 </head>
@@ -158,16 +89,20 @@
 
 <div class="game-container">
     <h1>消えた青いクッキー</h1>
-    <p>研究室から貴重な「青いクッキー」が一つだけ消えた。下の【人物カード】と【証言カード】をドラッグし、【タイムライン】で正しい組み合わせと順番を完成させよう。</p>
+    <p>研究室から貴重な「青いクッキー」が一つだけ消えた。下の【未整理カード置き場】からカードをドラッグし、【タイムライン】で正しい組み合わせと順番を完成させよう。</p>
 
-    <div class="area-title">人物カード</div>
-    <div id="person-pool" class="card-pool"></div>
-
-    <div class="area-title">証言カード</div>
-    <div id="testimony-pool" class="card-pool"></div>
+    <!-- ★★★ ここからレイアウトを全面的に改修 ★★★ -->
+    <div class="area-title">未整理カード置き場</div>
+    <div id="unsorted-container">
+        <p style="font-size: 0.9em; margin: 0 0 10px 0;"><strong>人物</strong></p>
+        <div id="person-unsorted-area" class="card-pool"></div>
+        <p style="font-size: 0.9em; margin: 15px 0 10px 0;"><strong>証言</strong></p>
+        <div id="testimony-unsorted-area" class="card-pool"></div>
+    </div>
+    <!-- ★★★ ここまでが新しい未整理カード置き場 ★★★ -->
     
     <div class="area-title">タイムライン</div>
-    <id id="timeline-area" class="timeline"></id>
+    <div id="timeline-area" class="timeline"></div>
 
     <div class="button-container">
         <button id="check-answer-btn">判定する</button>
@@ -185,37 +120,30 @@
         { id: 'mio', name: 'カタリナ', text: '一日の終わりに掃除をしていたら、研究室のゴミ箱に小さな銀紙が。他のゴミとは違う、お菓子の包み紙だったな。床は綺麗だったよ。', order: 5 }
     ];
 
-    const personPool = document.getElementById('person-pool');
-    const testimonyPool = document.getElementById('testimony-pool');
+  // ★★★ カードを配置する場所の変数を変更 ★★★
+    const personUnsortedArea = document.getElementById('person-unsorted-area');
+    const testimonyUnsortedArea = document.getElementById('testimony-unsorted-area');
     const timelineArea = document.getElementById('timeline-area');
     const checkBtn = document.getElementById('check-answer-btn');
     const resultArea = document.getElementById('result-area');
 
     function shuffle(array) { for (let i = array.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [array[i], array[j]] = [array[j], array[i]]; } return array; }
 
-    // カードの生成（draggable=trueは不要になりました）
-    shuffle([...data]).forEach(item => { const card = document.createElement('div'); card.id = `person-${item.id}`; card.className = 'card person-card'; card.textContent = item.name; personPool.appendChild(card); });
-    shuffle([...data]).forEach(item => { const card = document.createElement('div'); card.id = `testimony-${item.id}`; card.className = 'card testimony-card'; card.textContent = `「${item.text}」`; testimonyPool.appendChild(card); });
+    // カードを新しい未整理エリアに生成
+    shuffle([...data]).forEach(item => { const card = document.createElement('div'); card.id = `person-${item.id}`; card.className = 'card person-card'; card.textContent = item.name; personUnsortedArea.appendChild(card); });
+    shuffle([...data]).forEach(item => { const card = document.createElement('div'); card.id = `testimony-${item.id}`; card.className = 'card testimony-card'; card.textContent = `「${item.text}」`; testimonyUnsortedArea.appendChild(card); });
 
     for (let i = 1; i <= data.length; i++) { const slot = document.createElement('div'); slot.className = 'timeline-slot'; slot.dataset.order = i; slot.innerHTML = `<div class="person-dropzone" data-type="person"></div><div class="testimony-dropzone" data-type="testimony"></div>`; timelineArea.appendChild(slot); }
 
-    // ★★★ ここからがSortableJSによる新しい設定です ★★★
-    // 以前のドラッグ＆ドロップのコードは全て削除しました
-
-    // 人物カードのグループを設定
-    const personOptions = {
-        group: 'persons', // 'persons'という名前のグループは互いに移動可能
-        animation: 150,   // 移動時のアニメーション時間
-    };
-    new Sortable(personPool, personOptions);
+    // ★★★ SortableJSの設定を新しいレイアウトに合わせる ★★★
+    // 人物カードのグループ
+    const personOptions = { group: 'persons', animation: 150 };
+    new Sortable(personUnsortedArea, personOptions);
     document.querySelectorAll('.person-dropzone').forEach(zone => new Sortable(zone, personOptions));
 
-    // 証言カードのグループを設定
-    const testimonyOptions = {
-        group: 'testimonies', // 'testimonies'という名前のグループは互いに移動可能
-        animation: 150,
-    };
-    new Sortable(testimonyPool, testimonyOptions);
+    // 証言カードのグループ
+    const testimonyOptions = { group: 'testimonies', animation: 150 };
+    new Sortable(testimonyUnsortedArea, testimonyOptions);
     document.querySelectorAll('.testimony-dropzone').forEach(zone => new Sortable(zone, testimonyOptions));
 
     // 判定ボタンの処理 (変更なし)
@@ -232,7 +160,6 @@
             const correctItem = data.find(item => item.order === order);
             if (personId !== correctItem.id || testimonyId !== correctItem.id) { isCorrect = false; }
         });
-
 
         if (!isComplete) { resultArea.className = 'incorrect'; resultArea.innerHTML = 'まだ全てのカードがタイムラインに置かれていないようだ…'; }
         else if (isCorrect) { resultArea.className = 'correct'; resultArea.innerHTML = `【タイムライン完成！】\n\n一連の出来事は、こうだ。\n\n1.【タルトマン】「一番最初に見学した」という証言。\n2.【モブおじ】「学生さんの見学の後」に巡回。\n3.【クラリス】「おやつの催促に行った」ら事件発覚。\n4.【カリオストロ】「俺様の弟子が来る直前に気づいた」と証言。クラリスの直前の出来事。\n5.【カタリナ】「一日の終わりに掃除」中に犯人の痕跡を発見。\n\n【真相】\n犯人は……タルトマンだ。\n彼？は「キラキラしてて宝石みたい、だが私の方が美味い」という理由で、食べるためではなく嫉妬でクッキーを盗んだ。だから体が光ることはなかった。\n慌てていたため、持っていた別のお菓子のゴミ（銀紙）を研究室のゴミ箱に捨ててしまったのが、決定的な証拠となった。`; }
