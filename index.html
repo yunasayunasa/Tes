@@ -2,8 +2,10 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>タイムライン構築ミステリ：消えた青いクッキー</title>
+    <!-- ★★★ 専門ライブラリ「SortableJS」を読み込みます ★★★ -->
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
     <style>
         :root {
             --bg-color: #f0f2f5;
@@ -21,6 +23,8 @@
             color: var(--text-color);
             margin: 0;
             padding: 10px;
+            /* 画面全体のスクロールを無効化して誤操作を防ぐ */
+            overscroll-behavior: none;
         }
         .game-container {
             width: 100%;
@@ -65,8 +69,6 @@
             padding: 10px;
             cursor: grab;
             box-shadow: 0 2px 4px var(--shadow-color);
-            transition: transform 0.2s, box-shadow 0.2s;
-            touch-action: none; /* スマホでのスクロールを防止 */
         }
         .person-card {
             font-weight: bold;
@@ -75,11 +77,6 @@
         }
         .testimony-card {
             width: 100%;
-        }
-        .card:active {
-            cursor: grabbing;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-            transform: scale(1.05);
         }
         .timeline {
             display: flex;
@@ -112,9 +109,14 @@
             flex-grow: 1;
             min-height: 80px;
         }
-        .person-dropzone.drag-over, .testimony-dropzone.drag-over {
-            background-color: var(--drop-hover-bg);
-            border-color: var(--title-color);
+        /* ★★★ ライブラリが自動で付けるクラスでスタイルを調整 ★★★ */
+        .sortable-ghost {
+            opacity: 0.4;
+            background: #cce5ff;
+        }
+        .sortable-chosen {
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            transform: scale(1.05);
         }
         .button-container {
             text-align: center;
@@ -143,24 +145,12 @@
         .correct { background-color: #d4edda; color: #155724; }
         .incorrect { background-color: #f8d7da; color: #721c24; }
         
-        /* ★★★ ここからがスマホ対応のCSS ★★★ */
         @media (max-width: 600px) {
-            body {
-                padding: 5px;
-            }
-            .game-container {
-                padding: 10px;
-            }
-            .timeline-slot {
-                flex-direction: column; /* 縦並びに変更 */
-            }
-            .person-dropzone {
-                width: auto; /* 幅を自動調整 */
-                min-height: 40px;
-            }
-            .testimony-card {
-                font-size: 0.9em; /* 少し文字を小さくして読みやすく */
-            }
+            body { padding: 5px; }
+            .game-container { padding: 10px; }
+            .timeline-slot { flex-direction: column; }
+            .person-dropzone { width: auto; min-height: 40px; }
+            .testimony-card { font-size: 0.9em; }
         }
     </style>
 </head>
@@ -203,52 +193,32 @@
 
     function shuffle(array) { for (let i = array.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [array[i], array[j]] = [array[j], array[i]]; } return array; }
 
-    shuffle([...data]).forEach(item => { const card = document.createElement('div'); card.id = `person-${item.id}`; card.className = 'card person-card'; card.draggable = true; card.textContent = item.name; personPool.appendChild(card); });
-    shuffle([...data]).forEach(item => { const card = document.createElement('div'); card.id = `testimony-${item.id}`; card.className = 'card testimony-card'; card.draggable = true; card.textContent = `「${item.text}」`; testimonyPool.appendChild(card); });
+    // カードの生成（draggable=trueは不要になりました）
+    shuffle([...data]).forEach(item => { const card = document.createElement('div'); card.id = `person-${item.id}`; card.className = 'card person-card'; card.textContent = item.name; personPool.appendChild(card); });
+    shuffle([...data]).forEach(item => { const card = document.createElement('div'); card.id = `testimony-${item.id}`; card.className = 'card testimony-card'; card.textContent = `「${item.text}」`; testimonyPool.appendChild(card); });
 
     for (let i = 1; i <= data.length; i++) { const slot = document.createElement('div'); slot.className = 'timeline-slot'; slot.dataset.order = i; slot.innerHTML = `<div class="person-dropzone" data-type="person"></div><div class="testimony-dropzone" data-type="testimony"></div>`; timelineArea.appendChild(slot); }
 
-    let draggedItem = null;
-    document.querySelectorAll('.card').forEach(card => {
-        card.addEventListener('dragstart', (e) => {
-            draggedItem = e.target;
-            setTimeout(() => e.target.style.opacity = '0.5', 0);
-        });
-        card.addEventListener('dragend', (e) => {
-            setTimeout(() => {
-                draggedItem.style.opacity = '1';
-                draggedItem = null;
-            }, 0);
-        });
-    });
+    // ★★★ ここからがSortableJSによる新しい設定です ★★★
+    // 以前のドラッグ＆ドロップのコードは全て削除しました
 
-    document.querySelectorAll('.person-dropzone, .testimony-dropzone, .card-pool').forEach(zone => {
-        zone.addEventListener('dragover', e => { e.preventDefault(); });
-        zone.addEventListener('dragenter', e => { if (e.target.closest('.person-dropzone, .testimony-dropzone, .card-pool')) { e.target.closest('.person-dropzone, .testimony-dropzone, .card-pool').classList.add('drag-over'); } });
-        zone.addEventListener('dragleave', e => { if (e.target.closest('.person-dropzone, .testimony-dropzone, .card-pool')) { e.target.closest('.person-dropzone, .testimony-dropzone, .card-pool').classList.remove('drag-over'); } });
-        zone.addEventListener('drop', e => {
-            e.preventDefault();
-            const targetZone = e.target.closest('.person-dropzone, .testimony-dropzone, .card-pool');
-            if (!targetZone || !draggedItem) return;
-            targetZone.classList.remove('drag-over');
-            
-            const isPersonCard = draggedItem.classList.contains('person-card');
-            const targetIsPersonZone = targetZone.dataset.type === 'person';
-            const targetIsPersonPool = targetZone.id === 'person-pool';
-            const targetIsTestimonyZone = targetZone.dataset.type === 'testimony';
-            const targetIsTestimonyPool = targetZone.id === 'testimony-pool';
+    // 人物カードのグループを設定
+    const personOptions = {
+        group: 'persons', // 'persons'という名前のグループは互いに移動可能
+        animation: 150,   // 移動時のアニメーション時間
+    };
+    new Sortable(personPool, personOptions);
+    document.querySelectorAll('.person-dropzone').forEach(zone => new Sortable(zone, personOptions));
 
-            if ((isPersonCard && (targetIsPersonZone || targetIsPersonPool)) || (!isPersonCard && (targetIsTestimonyZone || targetIsTestimonyPool))) {
-                if (targetZone.children.length > 0 && !targetZone.classList.contains('card-pool')) {
-                    const existingCard = targetZone.firstChild;
-                    const pool = existingCard.classList.contains('person-card') ? personPool : testimonyPool;
-                    pool.appendChild(existingCard);
-                }
-                targetZone.appendChild(draggedItem);
-            }
-        });
-    });
+    // 証言カードのグループを設定
+    const testimonyOptions = {
+        group: 'testimonies', // 'testimonies'という名前のグループは互いに移動可能
+        animation: 150,
+    };
+    new Sortable(testimonyPool, testimonyOptions);
+    document.querySelectorAll('.testimony-dropzone').forEach(zone => new Sortable(zone, testimonyOptions));
 
+    // 判定ボタンの処理 (変更なし)
     checkBtn.addEventListener('click', () => {
         let isCorrect = true;
         let isComplete = true;
@@ -262,6 +232,7 @@
             const correctItem = data.find(item => item.order === order);
             if (personId !== correctItem.id || testimonyId !== correctItem.id) { isCorrect = false; }
         });
+
 
         if (!isComplete) { resultArea.className = 'incorrect'; resultArea.innerHTML = 'まだ全てのカードがタイムラインに置かれていないようだ…'; }
         else if (isCorrect) { resultArea.className = 'correct'; resultArea.innerHTML = `【タイムライン完成！】\n\n一連の出来事は、こうだ。\n\n1.【タルトマン】「一番最初に見学した」という証言。\n2.【モブおじ】「学生さんの見学の後」に巡回。\n3.【クラリス】「おやつの催促に行った」ら事件発覚。\n4.【カリオストロ】「俺様の弟子が来る直前に気づいた」と証言。クラリスの直前の出来事。\n5.【カタリナ】「一日の終わりに掃除」中に犯人の痕跡を発見。\n\n【真相】\n犯人は……タルトマンだ。\n彼？は「キラキラしてて宝石みたい、だが私の方が美味い」という理由で、食べるためではなく嫉妬でクッキーを盗んだ。だから体が光ることはなかった。\n慌てていたため、持っていた別のお菓子のゴミ（銀紙）を研究室のゴミ箱に捨ててしまったのが、決定的な証拠となった。`; }
